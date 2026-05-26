@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}JWT RBAC — Login{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="card login-card">
+        <div class="login-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#6366f1">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+            <h1>Welcome Back</h1>
+            <p class="text-muted">Sign in to your account</p>
+        </div>
+
+        <div id="loginAlert" class="alert"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)">Show</button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                Sign In
+            </button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <div id="registerAlert" class="alert"></div>
+
+        <form id="registerForm">
+            <h2>Create Account</h2>
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="regPassword" placeholder="Minimum 8 characters" required minlength="8">
+                    <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)">Show</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="regRole">Role</label>
+                <select id="regRole" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-color); color: var(--text-color);">
+                    <option value="USER">User</option>
+                    <option value="MODERATOR">Moderator</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-ghost btn-block" id="registerBtn">
+                Create Account
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-redirect if already logged in with valid token
+    (function() {
+        const token = getAuthToken();
+        if (token) {
+            const payload = decodeJwt(token);
+            if (payload && payload.exp && payload.exp * 1000 > Date.now()) {
+                window.location.href = ROUTER_PREFIX + '/dashboard';
+                return;
+            }
+            // Token expired, clear it
+            clearTokens();
+        }
+    })();
+
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = 'Hide';
+        } else {
+            input.type = 'password';
+            btn.textContent = 'Show';
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+        try {
+            const res = await fetch(ROUTER_PREFIX + '/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setTokens(data.access_token, data.refresh_token);
+                window.location.href = ROUTER_PREFIX + '/dashboard';
+            } else {
+                const err = await res.json();
+                showAlert('loginAlert', err.message || 'Invalid credentials');
+            }
+        } catch (err) {
+            showAlert('loginAlert', 'Network error. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('registerBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Creating...';
+
+        try {
+            const res = await fetch(ROUTER_PREFIX + '/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('regEmail').value,
+                    password: document.getElementById('regPassword').value,
+                    role_name: document.getElementById('regRole').value
+                })
+            });
+            if (res.ok) {
+                showAlert('registerAlert', 'Account created! You can now sign in.', 'success');
+                document.getElementById('registerForm').reset();
+            } else {
+                const err = await res.json();
+                showAlert('registerAlert', err.message || 'Registration failed');
+            }
+        } catch (err) {
+            showAlert('registerAlert', 'Network error. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    });
+</script>
+{% endblock %}

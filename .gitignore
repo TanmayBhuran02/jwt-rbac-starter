@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+venv/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+*.egg-info/
+dist/
+build/
+instructions/*
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

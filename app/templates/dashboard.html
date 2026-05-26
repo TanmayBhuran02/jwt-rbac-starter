@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}JWT RBAC — Dashboard{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <nav class="nav">
+        <div class="nav-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#6366f1">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+            JWT RBAC
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ request.app.state.router_prefix if request.app and request.app.state and request.app.state.router_prefix is defined else '' }}/dashboard" class="active">Dashboard</a></li>
+            <li><a href="{{ request.app.state.router_prefix if request.app and request.app.state and request.app.state.router_prefix is defined else '' }}/admin-panel" id="adminLink" style="display:none;">Admin Panel</a></li>
+            <li><a href="#" onclick="logout(); return false;" class="btn btn-ghost btn-sm">Logout</a></li>
+        </ul>
+    </nav>
+
+    <h1>Dashboard</h1>
+    <p class="mb-4">Your account overview</p>
+
+    <div id="profileLoading" class="loading-overlay">
+        <span class="spinner"></span> Loading profile...
+    </div>
+
+    <div id="profileContent" style="display:none;">
+        <div class="card mb-4">
+            <div class="profile-section">
+                <div class="profile-field">
+                    <span class="profile-label">Email</span>
+                    <span class="profile-value" id="profileEmail">—</span>
+                </div>
+                <div class="profile-field">
+                    <span class="profile-label">Account Status</span>
+                    <span id="profileStatus"></span>
+                </div>
+                <div class="profile-field">
+                    <span class="profile-label">Member Since</span>
+                    <span class="profile-value" id="profileCreated">—</span>
+                </div>
+                <div class="profile-field">
+                    <span class="profile-label">Roles</span>
+                    <div class="profile-roles" id="profileRoles"></div>
+                </div>
+                <div class="profile-field">
+                    <span class="profile-label">Permissions</span>
+                    <div class="permissions-list" id="profilePermissions"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change Section -->
+        <div class="card">
+            <h2>Change Password</h2>
+            <div id="passwordAlert" class="alert"></div>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" placeholder="Minimum 8 characters" required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" id="changePasswordBtn">
+                    Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show admin link if user is admin
+    if (hasRole('ADMIN')) {
+        document.getElementById('adminLink').style.display = '';
+    }
+
+    async function loadProfile() {
+        const res = await fetchWithAuth(ROUTER_PREFIX + '/users/me');
+        if (res && res.ok) {
+            const user = await res.json();
+
+            document.getElementById('profileEmail').textContent = user.email;
+            document.getElementById('profileCreated').textContent =
+                new Date(user.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+
+            // Status badge
+            const statusEl = document.getElementById('profileStatus');
+            statusEl.innerHTML = user.is_active
+                ? '<span class="badge badge-active">Active</span>'
+                : '<span class="badge badge-inactive">Inactive</span>';
+
+            // Role badges
+            const rolesEl = document.getElementById('profileRoles');
+            rolesEl.innerHTML = user.roles.map(r => {
+                const cls = r.name === 'ADMIN' ? 'badge-admin'
+                    : r.name === 'MODERATOR' ? 'badge-moderator'
+                    : 'badge-user';
+                return `<span class="badge ${cls}">${r.name}</span>`;
+            }).join('');
+
+            // Permissions
+            const permsEl = document.getElementById('profilePermissions');
+            const allPerms = new Set();
+            user.roles.forEach(r => r.permissions.forEach(p => allPerms.add(p.name)));
+            permsEl.innerHTML = [...allPerms].map(p =>
+                `<span class="permission-tag">${p}</span>`
+            ).join('');
+
+            document.getElementById('profileLoading').style.display = 'none';
+            document.getElementById('profileContent').style.display = 'block';
+        }
+    }
+
+    loadProfile();
+
+    // Password change
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('changePasswordBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Updating...';
+
+        try {
+            const res = await fetchWithAuth(ROUTER_PREFIX + '/users/me/password', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    current_password: document.getElementById('currentPassword').value,
+                    new_password: document.getElementById('newPassword').value,
+                })
+            });
+            if (res && res.ok) {
+                showAlert('passwordAlert', 'Password updated successfully!', 'success');
+                document.getElementById('passwordForm').reset();
+            } else if (res) {
+                const err = await res.json();
+                showAlert('passwordAlert', err.message || 'Failed to update password');
+            }
+        } catch (err) {
+            showAlert('passwordAlert', 'Network error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Update Password';
+        }
+    });
+</script>
+{% endblock %}
