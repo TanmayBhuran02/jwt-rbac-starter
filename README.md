@@ -11,6 +11,7 @@ A **production-ready** authentication and role-based access control starter kit 
 - **Rate Limiting** — Login endpoint rate-limited to 5 attempts/minute per IP
 - **Security Headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
 - **CORS** — Configurable allowed origins
+- **Frontend UI Templates** — Built-in HTML/CSS templates for Login, Dashboard, and Admin management
 - **Admin UI** — User management, role assignment, active/inactive toggling
 - **Seed Script** — Idempotent `python -m app.seed` for default data
 - **Docker** — One-command deployment with `docker compose up`
@@ -25,7 +26,7 @@ cd jwt-rbac-starter
 cp .env.example .env          # edit secrets!
 pip install -r requirements.txt
 python -m app.seed             # seed roles + admin user
-uvicorn app.main:app --reload  # open http://localhost:8000
+uvicorn app.main:app --reload  # open http://localhost:8000/login
 ```
 
 ---
@@ -143,13 +144,25 @@ docker compose --profile redis up
 | `POST` | `/auth/logout` | ✅ | Blacklist tokens, returns 204 |
 | `GET` | `/auth/me` | ✅ | Alias for `/users/me` |
 | `GET` | `/auth/token/info` | ✅ | Token introspection |
-| `POST` | `/users/register` | ❌ | Register new user |
+| `POST` | `/users/register` | ❌ | Register new user (accepts optional `role_name`) |
 | `GET` | `/users/me` | ✅ | Current user profile |
 | `PATCH` | `/users/me/password` | ✅ | Change password |
 | `GET` | `/admin/users` | 🔒 ADMIN | List all users |
 | `POST` | `/admin/users/{id}/roles` | 🔒 ADMIN | Assign/revoke role |
 | `PATCH` | `/admin/users/{id}/toggle-active` | 🔒 ADMIN | Toggle user active |
 | `GET` | `/admin/roles` | 🔒 ADMIN | List all roles |
+
+---
+
+## 🎨 Frontend UI Views
+
+The starter kit comes with out-of-the-box frontend templates built using pure HTML/CSS and vanilla JavaScript. 
+
+| View | Path | Description |
+|---|---|---|
+| **Login/Register** | `/login` | Handles user authentication and account creation (includes role selection). |
+| **Dashboard** | `/dashboard` | Protected route for authenticated users to view profile info and permissions. |
+| **Admin Panel** | `/admin/ui` | Protected route for `ADMIN` role. Manage users, assign roles, and toggle account states. |
 
 ---
 
