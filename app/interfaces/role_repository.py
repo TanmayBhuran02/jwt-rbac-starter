@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from app.schemas.role import RoleOut
+from app.schemas.role import PermissionOut, RoleOut
 
 
 class IRoleRepository(ABC):
@@ -62,6 +62,15 @@ class IRoleRepository(ABC):
 
         Returns:
             A list of all roles in the system.
+        """
+        ...
+
+    @abstractmethod
+    def list_permissions(self) -> list[PermissionOut]:
+        """List all available permissions.
+
+        Returns:
+            A list of all permissions in the system.
         """
         ...
 

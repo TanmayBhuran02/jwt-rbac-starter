@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.containers import Container
 from app.core.dependencies import require_role
 from app.interfaces.user_repository import IUserRepository
-from app.schemas.role import PermissionAssignment, RoleOut
+from app.schemas.role import PermissionAssignment, PermissionOut, RoleOut
 from app.schemas.user import RoleAssignment, UserOut
 from app.services.rbac_service import RBACService
 
@@ -93,6 +93,21 @@ def list_roles(
 ) -> list[RoleOut]:
     """List all available roles (admin only)."""
     return rbac_service.list_roles()
+
+
+@router.get(
+    "/permissions",
+    response_model=list[PermissionOut],
+    summary="List all permissions",
+    description="Admin-only: returns all available permissions.",
+)
+@inject
+def list_permissions(
+    rbac_service: RBACService = Depends(Provide[Container.rbac_service]),
+    _: UserOut = Depends(require_role("ADMIN")),
+) -> list[PermissionOut]:
+    """List all available permissions (admin only)."""
+    return rbac_service.list_permissions()
 
 
 @router.put(

@@ -62,6 +62,11 @@ class RBACService:
         return self.role_repo.list_all()
 
     @handle_db_exceptions
+    def list_permissions(self):
+        """List all available permissions."""
+        return self.role_repo.list_permissions()
+
+    @handle_db_exceptions
     def set_role_permissions(self, role_id: int, permission_names: list[str]):
         """Replace all permissions on a role with the given set.
 

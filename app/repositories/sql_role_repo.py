@@ -8,7 +8,7 @@ from app.core.exceptions import ServiceError
 from app.interfaces.role_repository import IRoleRepository
 from app.models.role import Permission, Role
 from app.models.user import User
-from app.schemas.role import RoleOut
+from app.schemas.role import PermissionOut, RoleOut
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,15 @@ class SqlRoleRepository(IRoleRepository):
             return [RoleOut.model_validate(r) for r in roles]
         except Exception as exc:
             logger.exception("Database error in list_all")
+            raise ServiceError(detail="Database error") from exc
+
+    def list_permissions(self) -> list[PermissionOut]:
+        """List all available permissions."""
+        try:
+            permissions = self.db.query(Permission).all()
+            return [PermissionOut.model_validate(p) for p in permissions]
+        except Exception as exc:
+            logger.exception("Database error in list_permissions")
             raise ServiceError(detail="Database error") from exc
 
     def set_permissions(self, role_id: int, permission_names: list[str]) -> RoleOut:

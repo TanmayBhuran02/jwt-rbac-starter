@@ -28,6 +28,7 @@
     </div>
 
     <div id="usersContent" style="display:none;">
+        <h2 class="mt-6 mb-4">Users Management</h2>
         <div class="table-container">
             <table>
                 <thead>
@@ -47,6 +48,26 @@
             </table>
         </div>
     </div>
+
+    <div id="rolesContent" style="display:none;">
+        <h2 class="mt-6 mb-4">Roles Management</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role Name</th>
+                        <th>Permissions</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="rolesTable">
+                    <tr class="empty-state-row">
+                        <td colspan="3" class="empty-state">No roles found</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -58,6 +79,8 @@
     }
 
     let allRoles = [];
+    let allPermissions = [];
+    let editingRoleId = null;
 
     async function loadRoles() {
         const res = await fetchWithAuth(ROUTER_PREFIX + '/admin/roles');
@@ -66,13 +89,22 @@
         }
     }
 
+    async function loadPermissions() {
+        const res = await fetchWithAuth(ROUTER_PREFIX + '/admin/permissions');
+        if (res && res.ok) {
+            allPermissions = await res.json();
+        }
+    }
+
     async function loadUsers() {
         const res = await fetchWithAuth(ROUTER_PREFIX + '/admin/users');
         if (res && res.ok) {
             const users = await res.json();
             renderUsers(users);
+            renderRoles();
             document.getElementById('usersLoading').style.display = 'none';
             document.getElementById('usersContent').style.display = 'block';
+            document.getElementById('rolesContent').style.display = 'block';
         } else if (res && res.status === 403) {
             document.getElementById('usersLoading').innerHTML =
                 '<p class="text-muted">Access Denied: ADMIN role required.</p>';
@@ -174,9 +206,92 @@
         }
     }
 
+    function renderRoles() {
+        const tbody = document.getElementById('rolesTable');
+
+        if (allRoles.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No roles found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = allRoles.map(role => {
+            const isEditing = editingRoleId === role.id;
+            
+            let permissionsCell = '';
+            let actionsCell = '';
+
+            if (isEditing) {
+                const currentPerms = role.permissions.map(p => p.name);
+                const checkboxes = allPermissions.map(p => {
+                    const checked = currentPerms.includes(p.name) ? 'checked' : '';
+                    return `<label style="display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+                        <input type="checkbox" value="${p.name}" ${checked} class="perm-checkbox-${role.id}">
+                        <span class="text-sm">${p.name}</span>
+                    </label>`;
+                }).join('');
+                permissionsCell = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;">${checkboxes}</div>`;
+                
+                actionsCell = `
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-primary" onclick="savePermissions(${role.id})">Save</button>
+                        <button class="btn btn-sm btn-ghost" onclick="cancelEditRole()">Cancel</button>
+                    </div>
+                `;
+            } else {
+                const tags = role.permissions.map(p => `<span class="permission-tag">${p.name}</span>`).join('');
+                permissionsCell = `<div class="permissions-list">${tags || '<span class="text-muted text-sm">None</span>'}</div>`;
+                
+                actionsCell = `
+                    <button class="btn btn-sm btn-ghost" onclick="editRole(${role.id})">Edit Permissions</button>
+                `;
+            }
+
+            const cls = role.name === 'ADMIN' ? 'badge-admin'
+                : role.name === 'MODERATOR' ? 'badge-moderator'
+                : 'badge-user';
+
+            return `<tr>
+                <td><span class="badge ${cls}">${role.name}</span></td>
+                <td>${permissionsCell}</td>
+                <td>${actionsCell}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function editRole(roleId) {
+        editingRoleId = roleId;
+        renderRoles();
+    }
+
+    function cancelEditRole() {
+        editingRoleId = null;
+        renderRoles();
+    }
+
+    async function savePermissions(roleId) {
+        const checkboxes = document.querySelectorAll(`.perm-checkbox-${roleId}:checked`);
+        const selectedPerms = Array.from(checkboxes).map(cb => cb.value);
+
+        const res = await fetchWithAuth(ROUTER_PREFIX + `/admin/roles/${roleId}/permissions`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permissions: selectedPerms }),
+        });
+
+        if (res && res.ok) {
+            showAlert('adminAlert', 'Permissions updated successfully', 'success');
+            editingRoleId = null;
+            await loadRoles();
+            renderRoles();
+        } else if (res) {
+            const err = await res.json();
+            showAlert('adminAlert', err.message || 'Failed to update permissions');
+        }
+    }
+
     // Load data
     (async () => {
-        await loadRoles();
+        await Promise.all([loadRoles(), loadPermissions()]);
         await loadUsers();
     })();
 </script>
