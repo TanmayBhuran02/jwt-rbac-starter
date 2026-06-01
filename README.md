@@ -151,6 +151,7 @@ docker compose --profile redis up
 | `POST` | `/admin/users/{id}/roles` | 🔒 ADMIN | Assign/revoke role |
 | `PATCH` | `/admin/users/{id}/toggle-active` | 🔒 ADMIN | Toggle user active |
 | `GET` | `/admin/roles` | 🔒 ADMIN | List all roles |
+| `PUT` | `/admin/roles/{id}/permissions` | 🔒 ADMIN | Assign / update permissions for a role |
 
 ---
 

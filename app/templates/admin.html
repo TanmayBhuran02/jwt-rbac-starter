@@ -115,7 +115,7 @@
 
             return `<tr>
                 <td>${user.email}</td>
-                <td>${roleBadges || '<span class="text-muted text-sm">None</span>'}</td>
+                <td><div class="flex gap-2" style="flex-wrap:wrap;">${roleBadges || '<span class="text-muted text-sm">None</span>'}</div></td>
                 <td>${statusBadge}</td>
                 <td class="text-muted text-sm">${joinDate}</td>
                 <td>

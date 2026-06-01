@@ -60,3 +60,23 @@ class RBACService:
     def list_roles(self):
         """List all available roles."""
         return self.role_repo.list_all()
+
+    @handle_db_exceptions
+    def set_role_permissions(self, role_id: int, permission_names: list[str]):
+        """Replace all permissions on a role with the given set.
+
+        Args:
+            role_id: The primary key of the role.
+            permission_names: A list of permission name strings to assign.
+
+        Returns:
+            The updated role with its new permissions.
+
+        Raises:
+            HTTPException: If the role or any permission is not found.
+        """
+        updated_role = self.role_repo.set_permissions(role_id, permission_names)
+        logger.info(
+            "Updated permissions for role %d to %s", role_id, permission_names
+        )
+        return updated_role

@@ -1,6 +1,6 @@
 """Role and permission Pydantic schemas."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PermissionOut(BaseModel):
@@ -20,3 +20,14 @@ class RoleOut(BaseModel):
     permissions: list[PermissionOut] = []
 
     model_config = {"from_attributes": True}
+
+
+class PermissionAssignment(BaseModel):
+    """Request body for assigning permissions to a role."""
+
+    permissions: list[str] = Field(
+        ...,
+        min_length=1,
+        description="List of permission names to assign to the role",
+        json_schema_extra={"examples": [["users:read", "users:write"]]},
+    )

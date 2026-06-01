@@ -64,3 +64,19 @@ class IRoleRepository(ABC):
             A list of all roles in the system.
         """
         ...
+
+    @abstractmethod
+    def set_permissions(self, role_id: int, permission_names: list[str]) -> RoleOut:
+        """Replace all permissions on a role with the given set.
+
+        Args:
+            role_id: The primary key of the role.
+            permission_names: A list of permission name strings to assign.
+
+        Returns:
+            The updated role with its new permissions.
+
+        Raises:
+            ServiceError: If the role is not found or a permission name is invalid.
+        """
+        ...

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import ServiceError
 from app.interfaces.role_repository import IRoleRepository
-from app.models.role import Role
+from app.models.role import Permission, Role
 from app.models.user import User
 from app.schemas.role import RoleOut
 
@@ -74,4 +74,36 @@ class SqlRoleRepository(IRoleRepository):
             return [RoleOut.model_validate(r) for r in roles]
         except Exception as exc:
             logger.exception("Database error in list_all")
+            raise ServiceError(detail="Database error") from exc
+
+    def set_permissions(self, role_id: int, permission_names: list[str]) -> RoleOut:
+        """Replace all permissions on a role with the given set."""
+        try:
+            role = self.db.query(Role).filter(Role.id == role_id).first()
+            if not role:
+                raise ServiceError(detail="Role not found", status_code=404)
+
+            # Resolve permission names to ORM objects
+            permissions = (
+                self.db.query(Permission)
+                .filter(Permission.name.in_(permission_names))
+                .all()
+            )
+            found_names = {p.name for p in permissions}
+            unknown = set(permission_names) - found_names
+            if unknown:
+                raise ServiceError(
+                    detail=f"Unknown permissions: {', '.join(sorted(unknown))}",
+                    status_code=400,
+                )
+
+            role.permissions = permissions
+            self.db.commit()
+            self.db.refresh(role)
+            return RoleOut.model_validate(role)
+        except ServiceError:
+            raise
+        except Exception as exc:
+            self.db.rollback()
+            logger.exception("Database error in set_permissions")
             raise ServiceError(detail="Database error") from exc

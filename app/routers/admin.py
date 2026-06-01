@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.containers import Container
 from app.core.dependencies import require_role
 from app.interfaces.user_repository import IUserRepository
-from app.schemas.role import RoleOut
+from app.schemas.role import PermissionAssignment, RoleOut
 from app.schemas.user import RoleAssignment, UserOut
 from app.services.rbac_service import RBACService
 
@@ -93,3 +93,20 @@ def list_roles(
 ) -> list[RoleOut]:
     """List all available roles (admin only)."""
     return rbac_service.list_roles()
+
+
+@router.put(
+    "/roles/{role_id}/permissions",
+    response_model=RoleOut,
+    summary="Assign or update permissions for a role",
+    description="Admin-only: replaces all permissions on a role with the provided set.",
+)
+@inject
+def set_role_permissions(
+    role_id: int,
+    data: PermissionAssignment,
+    rbac_service: RBACService = Depends(Provide[Container.rbac_service]),
+    _: UserOut = Depends(require_role("ADMIN")),
+) -> RoleOut:
+    """Replace all permissions on a role (admin only)."""
+    return rbac_service.set_role_permissions(role_id, data.permissions)
