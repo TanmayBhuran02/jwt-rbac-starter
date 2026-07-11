@@ -146,7 +146,7 @@ def test_change_password_wrong_current(client):
 
 def test_rate_limiting(client):
     """Rate limit triggers after 5 failed logins."""
-    from app.core.limiter import limiter
+    from jwt_rbac.core.limiter import limiter
 
     limiter.enabled = True
 

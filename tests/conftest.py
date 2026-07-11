@@ -6,11 +6,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
-from app.models.db import Base
-from app.models.role import Permission, Role
-from app.models.user import User
-from app.repositories.memory_blacklist import MemoryTokenBlacklist
+from jwt_rbac.main import app
+from jwt_rbac.models.db import Base
+from jwt_rbac.models.role import Permission, Role
+from jwt_rbac.models.user import User
+from jwt_rbac.repositories.memory_blacklist import MemoryTokenBlacklist
 
 # Use a file-based SQLite for testing
 engine = create_engine("sqlite:///./test.db", connect_args={"check_same_thread": False})
@@ -60,7 +60,7 @@ def setup_db():
 def client():
     """Provide a test client for the FastAPI app."""
     # Disable rate limiting for testing to avoid 429 Too Many Requests
-    from app.core.limiter import limiter
+    from jwt_rbac.core.limiter import limiter
 
     limiter.enabled = False
 

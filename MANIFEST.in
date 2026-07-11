@@ -1,0 +1,3 @@
+recursive-include jwt_rbac/templates *
+recursive-include jwt_rbac/static *
+include jwt_rbac/py.typed

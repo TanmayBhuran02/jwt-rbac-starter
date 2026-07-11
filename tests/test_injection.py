@@ -6,10 +6,10 @@ from uuid import uuid4
 from dependency_injector import providers
 from fastapi.testclient import TestClient
 
-from app.interfaces.user_repository import IUserRepository
-from app.main import app
-from app.schemas.role import PermissionOut, RoleOut
-from app.schemas.user import UserInDB, UserOut
+from jwt_rbac.interfaces.user_repository import IUserRepository
+from jwt_rbac.main import app
+from jwt_rbac.schemas.role import PermissionOut, RoleOut
+from jwt_rbac.schemas.user import UserInDB, UserOut
 
 
 class FakeUserRepository(IUserRepository):
@@ -35,7 +35,7 @@ class FakeUserRepository(IUserRepository):
         return None
 
     def create(self, data) -> UserOut:
-        from app.core.security import get_password_hash
+        from jwt_rbac.core.security import get_password_hash
 
         uid = uuid4()
         user = UserInDB(
@@ -131,7 +131,7 @@ def test_custom_repo_injected_via_setup():
 
 def test_setup_api_injection():
     """Verify that calling setup() with a custom repo injects it correctly."""
-    from app.setup import setup
+    from jwt_rbac.setup import setup
 
     fake_repo = FakeUserRepository()
 
@@ -156,14 +156,14 @@ def test_setup_api_injection():
             assert fake_repo.find_by_email("setup_injected@test.com") is not None
     finally:
         custom_app.container.unwire()
-        from app.main import app as global_app
+        from jwt_rbac.main import app as global_app
 
         global_app.container.wire(
             modules=[
-                "app.core.dependencies",
-                "app.routers.auth",
-                "app.routers.users",
-                "app.routers.admin",
+                "jwt_rbac.core.dependencies",
+                "jwt_rbac.routers.auth",
+                "jwt_rbac.routers.users",
+                "jwt_rbac.routers.admin",
             ]
         )
 
@@ -172,7 +172,7 @@ def test_setup_api_invalid_secrets():
     """Verify that setup() enforces a minimum 32 character limit for secrets."""
     import pytest
 
-    from app.setup import setup
+    from jwt_rbac.setup import setup
 
     with pytest.raises(ValueError, match="secret_key must be at least 32 characters long"):
         setup(secret_key="too-short")
@@ -187,7 +187,7 @@ def test_setup_api_partial_repo_error():
     """Verify that setup() raises a TypeError if an object missing abstract methods is passed."""
     import pytest
 
-    from app.setup import setup
+    from jwt_rbac.setup import setup
 
     class DummyObj:
         pass

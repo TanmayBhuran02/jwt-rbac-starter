@@ -13,7 +13,7 @@ A **production-ready** authentication and role-based access control starter kit 
 - **CORS** — Configurable allowed origins
 - **Frontend UI Templates** — Built-in HTML/CSS templates for Login, Dashboard, and Admin management
 - **Admin UI** — User management, role assignment, active/inactive toggling
-- **Seed Script** — Idempotent `python -m app.seed` for default data
+- **Seed Script** — Idempotent `python -m jwt_rbac.seed` for default data
 - **Docker** — One-command deployment with `docker compose up`
 
 ---
@@ -25,8 +25,8 @@ git clone https://github.com/your-org/jwt-rbac-starter.git
 cd jwt-rbac-starter
 cp .env.example .env          # edit secrets!
 pip install -r requirements.txt
-python -m app.seed             # seed roles + admin user
-uvicorn app.main:app --reload  # open http://localhost:8000/login
+python -m jwt_rbac.seed             # seed roles + admin user
+uvicorn jwt_rbac.main:app --reload  # open http://localhost:8000/login
 ```
 
 ---
@@ -36,7 +36,7 @@ uvicorn app.main:app --reload  # open http://localhost:8000/login
 Implement the abstract interfaces and pass them to `setup()`:
 
 ```python
-from app import IUserRepository, IRoleRepository
+from jwt_rbac import IUserRepository, IRoleRepository
 
 class MyMongoUserRepository(IUserRepository):
     def find_by_email(self, email: str):
@@ -68,7 +68,7 @@ Any missing abstract method raises a clear `TypeError` at import time — not a 
 Both work as FastAPI `Depends()`:
 
 ```python
-from app import require_role, require_permission
+from jwt_rbac import require_role, require_permission
 
 # Single role
 @router.get("/admin")
@@ -118,7 +118,7 @@ pytest -v
 With coverage:
 
 ```bash
-pytest --cov=app --cov-report=html
+pytest --cov=jwt_rbac --cov-report=html
 ```
 
 ---

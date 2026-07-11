@@ -6,12 +6,14 @@ import pytest
 from fastapi import APIRouter, Depends, HTTPException, Request
 from jose import jwt
 
-from app.config import settings
-from app.core.dependencies import require_permission, require_role
-from app.core.exceptions import CredentialsException
-from app.core.security import create_access_token, decode_refresh_token, decode_token
-from app.main import app
+from jwt_rbac.config import get_settings
+from jwt_rbac.core.dependencies import require_permission, require_role
+from jwt_rbac.core.exceptions import CredentialsException
+from jwt_rbac.core.security import create_access_token, decode_refresh_token, decode_token
+from jwt_rbac.main import app
 from tests.conftest import get_auth_header, login_user, make_admin, make_moderator, register_user
+
+settings = get_settings()
 
 # Define transient test router for testing standalone decorators and dependencies
 router = APIRouter(prefix="/test-decor")
@@ -83,7 +85,8 @@ def test_require_permission_decorator_success(client, db_session):
 
 def test_jwt_issuer_validation(db_session):
     """Verify JWT issuer validation when JWT_ISSUER is set."""
-    from app.config import settings
+    from jwt_rbac.config import get_settings
+    settings = get_settings()
 
     # Temporarily set issuer
     settings.jwt_issuer = "test-issuer"
@@ -135,8 +138,8 @@ def test_duplicate_registration_raises_conflict(client):
 
 def test_rbac_service_edge_cases(db_session):
     """Test RBACService error paths."""
-    from app.repositories.sql_role_repo import SqlRoleRepository
-    from app.services.rbac_service import RBACService
+    from jwt_rbac.repositories.sql_role_repo import SqlRoleRepository
+    from jwt_rbac.services.rbac_service import RBACService
 
     repo = SqlRoleRepository(db_session)
     service = RBACService(repo)
@@ -158,7 +161,7 @@ def test_deactivated_user_protected_route(client, db_session):
     tokens = login_user(client, "deact_route@example.com")
 
     # Deactivate user
-    from app.repositories.sql_user_repo import SqlUserRepository
+    from jwt_rbac.repositories.sql_user_repo import SqlUserRepository
 
     repo = SqlUserRepository(db_session)
     repo.set_active(reg["id"], False)
@@ -221,7 +224,7 @@ def test_decorator_deactivated_user(client, db_session):
     tokens = login_user(client, "decor_deact@example.com")
 
     # Deactivate
-    from app.repositories.sql_user_repo import SqlUserRepository
+    from jwt_rbac.repositories.sql_user_repo import SqlUserRepository
 
     repo = SqlUserRepository(db_session)
     repo.set_active(reg["id"], False)
@@ -267,3 +270,55 @@ def uuid4_fake():
     import uuid
 
     return uuid.uuid4()
+
+
+def test_rbac_service_success_paths(client, db_session):
+    """Test success paths of RBACService list and modification methods."""
+    from jwt_rbac.models.role import Role
+    from jwt_rbac.repositories.sql_role_repo import SqlRoleRepository
+    from jwt_rbac.services.rbac_service import RBACService
+
+    repo = SqlRoleRepository(db_session)
+    service = RBACService(repo)
+
+    # list_roles
+    roles = service.list_roles()
+    assert len(roles) > 0
+    role_names = [r.name for r in roles]
+    assert "ADMIN" in role_names
+    assert "USER" in role_names
+
+    # list_permissions
+    perms = service.list_permissions()
+    assert len(perms) > 0
+    perm_names = [p.name for p in perms]
+    assert "users:read" in perm_names
+
+    # find ADMIN role ID
+    admin_role = db_session.query(Role).filter(Role.name == "ADMIN").first()
+    assert admin_role is not None
+
+    # set_role_permissions
+    updated_role = service.set_role_permissions(admin_role.id, ["users:read", "users:write"])
+    assert updated_role is not None
+    updated_perms = [p.name for p in updated_role.permissions]
+    assert "users:read" in updated_perms
+    assert "users:write" in updated_perms
+    assert "admin:access" not in updated_perms
+
+    # Revoke role success path
+    # First assign ADMIN role to a registered user
+    reg = register_user(client, "rbac_service_test@example.com")
+    user_id = reg["id"]
+    service.assign_role(user_id, "ADMIN")
+    
+    # Verify user has the role
+    user_roles = [r.name for r in repo.get_user_roles(user_id)]
+    assert "ADMIN" in user_roles
+
+    # Revoke role
+    service.revoke_role(user_id, "ADMIN")
+    user_roles = [r.name for r in repo.get_user_roles(user_id)]
+    assert "ADMIN" not in user_roles
+
+

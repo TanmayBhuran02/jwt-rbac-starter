@@ -1,8 +1,70 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "jwt-rbac-starter"
-version = "1.0.0"
-description = "A production-ready JWT + RBAC starter kit for Python / FastAPI"
+version = "2.0.0"
+description = "A production-ready, pip-installable JWT + RBAC starter kit for Python / FastAPI"
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+]
+
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]",
+    "python-jose[cryptography]",
+    "passlib[bcrypt]",
+    "bcrypt",
+    "pydantic-settings",
+    "pydantic[email]",
+    "dependency-injector",
+    "sqlalchemy",
+    "jinja2",
+    "python-multipart",
+    "python-dotenv",
+    "slowapi",
+]
+
+[project.optional-dependencies]
+redis = ["redis"]
+postgres = ["psycopg2-binary"]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "httpx",
+    "ruff",
+    "pre-commit",
+]
+all = ["jwt-rbac-starter[redis,postgres]"]
+
+[project.urls]
+Homepage = "https://github.com/your-org/jwt-rbac-starter"
+Documentation = "https://github.com/your-org/jwt-rbac-starter#readme"
+Repository = "https://github.com/your-org/jwt-rbac-starter"
+Issues = "https://github.com/your-org/jwt-rbac-starter/issues"
+
+[tool.setuptools.packages.find]
+include = ["jwt_rbac*"]
+
+[tool.setuptools.package-data]
+jwt_rbac = [
+    "templates/**/*",
+    "static/**/*",
+    "py.typed",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -18,4 +80,4 @@ select = ["E", "F", "I"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["jwt_rbac"]
