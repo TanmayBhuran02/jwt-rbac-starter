@@ -81,7 +81,5 @@ class RBACService:
             HTTPException: If the role or any permission is not found.
         """
         updated_role = self.role_repo.set_permissions(role_id, permission_names)
-        logger.info(
-            "Updated permissions for role %d to %s", role_id, permission_names
-        )
+        logger.info("Updated permissions for role %d to %s", role_id, permission_names)
         return updated_role

@@ -47,6 +47,9 @@ dev = [
     "httpx",
     "ruff",
     "pre-commit",
+    # The test suite runs against a real PostgreSQL instance, so the
+    # driver is required for `pip install -r requirements.txt`.
+    "psycopg2-binary",
 ]
 all = ["jwt-rbac-starter[redis,postgres]"]
 
@@ -70,6 +73,9 @@ jwt_rbac = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v --tb=short"
+markers = [
+    "db: tests that require a live PostgreSQL instance (the entire suite by default)",
+]
 
 [tool.ruff]
 target-version = "py310"

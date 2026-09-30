@@ -86,6 +86,7 @@ def test_require_permission_decorator_success(client, db_session):
 def test_jwt_issuer_validation(db_session):
     """Verify JWT issuer validation when JWT_ISSUER is set."""
     from jwt_rbac.config import get_settings
+
     settings = get_settings()
 
     # Temporarily set issuer
@@ -311,7 +312,7 @@ def test_rbac_service_success_paths(client, db_session):
     reg = register_user(client, "rbac_service_test@example.com")
     user_id = reg["id"]
     service.assign_role(user_id, "ADMIN")
-    
+
     # Verify user has the role
     user_roles = [r.name for r in repo.get_user_roles(user_id)]
     assert "ADMIN" in user_roles
@@ -320,5 +321,3 @@ def test_rbac_service_success_paths(client, db_session):
     service.revoke_role(user_id, "ADMIN")
     user_roles = [r.name for r in repo.get_user_roles(user_id)]
     assert "ADMIN" not in user_roles
-
-

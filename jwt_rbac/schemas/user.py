@@ -13,7 +13,9 @@ class UserCreate(BaseModel):
 
     email: EmailStr = Field(..., description="Valid email address")
     password: str = Field(..., min_length=8, description="Password (minimum 8 characters)")
-    role_name: str | None = Field(None, description="Optional role to assign during registration (defaults to 'USER')")
+    role_name: str | None = Field(
+        None, description="Optional role to assign during registration (defaults to 'USER')"
+    )
 
 
 class UserOut(BaseModel):

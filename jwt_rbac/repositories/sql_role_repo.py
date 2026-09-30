@@ -94,9 +94,7 @@ class SqlRoleRepository(IRoleRepository):
 
             # Resolve permission names to ORM objects
             permissions = (
-                self.db.query(Permission)
-                .filter(Permission.name.in_(permission_names))
-                .all()
+                self.db.query(Permission).filter(Permission.name.in_(permission_names)).all()
             )
             found_names = {p.name for p in permissions}
             unknown = set(permission_names) - found_names

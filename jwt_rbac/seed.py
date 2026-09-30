@@ -1,7 +1,7 @@
 """Idempotent seed script for default roles, permissions, and ADMIN user.
 
 Usage:
-    python -m app.seed
+    python -m jwt_rbac.seed
 
 Creates:
     - Default permissions: users:read, users:write, admin:access, reports:read

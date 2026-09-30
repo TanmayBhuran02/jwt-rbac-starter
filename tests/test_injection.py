@@ -155,7 +155,13 @@ def test_setup_api_injection():
             # Verify it went to the fake repository
             assert fake_repo.find_by_email("setup_injected@test.com") is not None
     finally:
+        # Unwire first, then shut the container's resources down.  Without
+        # this the `db_session` Resource generator is never closed, leaving a
+        # connection checked out of the pool for the rest of the session.
         custom_app.container.unwire()
+        custom_app.container.shutdown_resources()
+        custom_app.container.reset_override()
+
         from jwt_rbac.main import app as global_app
 
         global_app.container.wire(

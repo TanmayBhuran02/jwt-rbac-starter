@@ -24,9 +24,7 @@ def get_engine():
         _engine = create_engine(
             settings.database_url,
             connect_args=(
-                {"check_same_thread": False}
-                if "sqlite" in settings.database_url
-                else {}
+                {"check_same_thread": False} if "sqlite" in settings.database_url else {}
             ),
         )
     return _engine
@@ -36,9 +34,7 @@ def get_session_local():
     """Return the session factory, creating it on first call."""
     global _SessionLocal
     if _SessionLocal is None:
-        _SessionLocal = sessionmaker(
-            autocommit=False, autoflush=False, bind=get_engine()
-        )
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
     return _SessionLocal
 
 
