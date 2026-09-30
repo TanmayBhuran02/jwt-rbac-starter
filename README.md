@@ -349,6 +349,17 @@ These routes are hidden from the OpenAPI schema. Pass `include_ui=False` to `set
 
 ---
 
+## 🔮 Future Enhancements
+
+- **Asymmetric JWT Signing (RS256 / EdDSA):** Migrate from symmetric HS256 to asymmetric keypairs for distributed microservices. Private key retained in auth service; downstream services verify via public key.
+- **JWKS Endpoint (`/.well-known/jwks.json`):** Expose public keys for automated client verification and seamless key rotation.
+- **Multi-Tenancy & ABAC:** Extend RBAC to attribute-based access control and tenant isolation.
+- **Standardize on `Depends()` Authorization:** Deprecate route decorators in favor of pure FastAPI `Depends(require_permission(...))` for complete OpenAPI security schema auto-generation and unified dependency injection across microservices.
+- **Password Hashing & Key Stretching Optimization:** Bcrypt verification uses thousands of rounds of key stretching (CPU-intensive). Optimize execution to prevent event-loop/worker starvation during concurrent login spikes (approach TBD: dedicated worker pool, Argon2id migration, or isolated auth compute workers).
+- **OpenTelemetry & Prometheus:** Out-of-the-box `/metrics` and distributed tracing instrumentation.
+
+---
+
 ## 📄 License
 
 MIT
